@@ -3,7 +3,7 @@ import os
 import torch
 from collections import Counter
 
-DATA_DIR = '/home/henri/Repos/python_for_data_science/group_project_2nd_struct/ICML2014'
+DATA_DIR = '/home/henri/Repos/python_for_data_science/SS_prediction_CNN/ICML2014'
 data = np.load(os.path.join(DATA_DIR, 'cullpdb+profile_5926.npy'))
 # np.savetxt('cullpdb+profile_5926.csv', data, delimiter=',', fmt='%d')
 
@@ -56,6 +56,39 @@ all_labels = np.argmax(all_labels, axis=1)
 
 Counter(all_labels)
 # Counter({0: 3142553, 5: 429890, 2: 270087, 7: 140813, 6: 103017, 3: 48643, 1: 12970, 4: 227})
+
+####################
+# Conversion to Q3
+####################
+
+# Wikipedia DSSP: These eight types are usually grouped into three larger classes: 
+# helix (G, H and I), strand (E and B) and loop (S, T, and C, where C sometimes is represented also as blank space). 
+
+# L(loop) instead of C(coil)?
+# [22,31): Secondary structure labels, with the sequence of 'L', 'B', 'E', 'G', 'I', 'H', 'S', 'T','NoSeq'
+
+# L: 22, 28, 29
+# S: 23, 24
+# H: 25, 26, 27
+
+data_reshaped_Q3 = data_reshaped
+data_reshaped_Q3[22] = data_reshaped_Q3[22] + data_reshaped_Q3[28] + data_reshaped_Q3[29]
+data_reshaped_Q3[23] = data_reshaped_Q3[23] + data_reshaped_Q3[24] 
+data_reshaped_Q3[24] = data_reshaped_Q3[25] + data_reshaped_Q3[26] + data_reshaped_Q3[27]
+
+X_train_Q3 = data_reshaped[0:5430, :, np.r_[0:21, 31:33, 35:57]]
+y_train_Q3 = data_reshaped[0:5430, :, 22:25]
+X_test_Q3 = data_reshaped[5435:5690, :, np.r_[0:21, 31:33, 35:57]]
+y_test_Q3 = data_reshaped[5435:5690, :, 22:25]
+X_val_Q3 = data_reshaped[5690:5926, :, np.r_[0:21, 31:33, 35:57]]
+y_val_Q3 = data_reshaped[5690:5926, :, 22:25]
+
+all_labels = data_reshaped_Q3[:, :, 22:25]
+all_labels = all_labels.reshape(-1, 3)
+all_labels = np.argmax(all_labels, axis=1)
+
+print(Counter(all_labels))
+# Counter({0: 3865121, 2: 270105, 1: 12974})
 
 
 ###############################################
