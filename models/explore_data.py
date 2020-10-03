@@ -1,11 +1,20 @@
 import numpy as np 
 import os
+import sys
 import torch
 from collections import Counter
 
-DATA_DIR = '/home/henri/Repos/python_for_data_science/SS_prediction_CNN/ICML2014'
-data = np.load(os.path.join(DATA_DIR, 'cullpdb+profile_5926.npy'))
-# np.savetxt('cullpdb+profile_5926.csv', data, delimiter=',', fmt='%d')
+# Set location of train/test data 
+DATA_DIR = os.path.join('..', 'ICML2014')
+DATA_FILE = os.path.join(DATA_DIR, 'cullpdb+profile_5926.npy')
+
+# check if file exists and load data
+try:
+    data = np.load(DATA_FILE)
+    # np.savetxt('cullpdb+profile_5926.csv', data, delimiter=',', fmt='%d')
+except:
+    sys.stderr.write("Error: Cannot open file: {}\n".format(DATA_FILE))
+    sys.exit(1)
 
 # N protein x k features matrix, all sequences 700 aa long
 print(data.shape)

@@ -1,13 +1,6 @@
-# TODO
-# translate labels into 3 categories
-# figure out what the 8 categories are biologically
-# comment and clean code
-# evaluate accuracy on train set
-# evaluate accuracy validation set
-# categories are heavily biased -> only 1st and 6th category are ever predicted
-
 import numpy as np 
 import os
+import sys
 
 import torch
 from torch.nn import Module, Sequential, Conv1d, ReLU, MaxPool1d, Linear, CrossEntropyLoss, Dropout
@@ -16,10 +9,21 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 from sklearn.metrics import accuracy_score, confusion_matrix,classification_report
 
-# Load and reshape data (see explore_data.py)
-DATA_DIR = '/home/henri/Repos/python_for_data_science/group_project_2nd_struct/ICML2014'
-data = np.load(os.path.join(DATA_DIR, 'cullpdb+profile_5926.npy'))
 
+# Set location of train/test data 
+DATA_DIR = os.path.join('..', 'ICML2014')
+DATA_FILE = os.path.join(DATA_DIR, 'cullpdb+profile_5926.npy')
+
+# check if file exists and load data
+try:
+    data = np.load(DATA_FILE)
+    # np.savetxt('cullpdb+profile_5926.csv', data, delimiter=',', fmt='%d')
+except:
+    sys.stderr.write("Error: Cannot open file: {}\n".format(DATA_FILE))
+    sys.exit(1)
+
+
+# Reshape data (see explore_data.py)
 data_reshaped = data.reshape(5926, 700, -1)
 
 X_train = data_reshaped[0:5430, :, np.r_[0:21, 31:33, 35:57]]
