@@ -63,8 +63,17 @@ all_labels = data_reshaped[:, :, 22:30]
 all_labels = all_labels.reshape(-1, 8)
 all_labels = np.argmax(all_labels, axis=1)
 
-Counter(all_labels)
+label_distribution = Counter(all_labels)
 # Counter({0: 3142553, 5: 429890, 2: 270087, 7: 140813, 6: 103017, 3: 48643, 1: 12970, 4: 227})
+
+# calculating weights for loss function
+# Weight of class c is the size of largest class divided by the size of class c. 
+# convert counter object to ordered list
+label_distribution = [label_distribution[i] for i in range(len(label_distribution))]
+
+largest_class = label_distribution.max()
+
+loss_weights = [largest_class / label_distribution[i] for i in range(len(label_distribution))]
 
 ####################
 # Conversion to Q3

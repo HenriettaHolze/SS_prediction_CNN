@@ -8,6 +8,7 @@ from torch.optim import SGD, Adam
 import torch.nn.functional as F
 from torch.autograd import Variable
 from sklearn.metrics import accuracy_score, confusion_matrix,classification_report
+from collections import Counter
 
 
 # Set location of train/test data 
@@ -96,7 +97,22 @@ learning_rate = 0.001
 optimizer = Adam(model.parameters(), lr=learning_rate)
 
 # Cross Entropy Loss
-criterion = CrossEntropyLoss()
+# Calculates weights to tackle class bias
+# Weight of class c is the size of largest class divided by the size of class c. 
+labels_train = np.argmax(y_train.numpy(), axis=2)       # convert to numpy array for faster performance
+# count classes
+label_distribution = Counter(labels_train.reshape(-1))
+
+# convert counter object to ordered list
+label_distribution = [label_distribution[i] for i in range(len(label_distribution))]
+
+largest_class = max(label_distribution)
+
+loss_weights = np.fromiter((largest_class / label_distribution[i] for i in range(len(label_distribution))), dtype=float)
+
+loss_weights = torch.from_numpy(loss_weights).float()
+
+criterion = CrossEntropyLoss(weight=loss_weights)
 
 
 # Train
