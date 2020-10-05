@@ -62,14 +62,23 @@ class CnnModel(Module):
         # out_channel == number of filters to learn
         # kernel_size == window/filter size
         # padding = kernel_size / 2 - 1 to conserve sequence length
-        self.conv1 = Conv1d(in_channels=45, out_channels=16, kernel_size=9, padding=4)
-        # CLASS_NUMBER output categories
-        self.conv2 = Conv1d(in_channels=16, out_channels=CLASS_NUMBER, kernel_size=3, padding=1)
+        self.conv1 = Conv1d(in_channels=45, out_channels=16, kernel_size=11, padding=5)
+        # 3 output categories
+        self.conv2 = Conv1d(in_channels=16, out_channels=10, kernel_size=11, padding=5)
+        self.conv3 = Conv1d(in_channels=10, out_channels=10, kernel_size=11, padding=5)
+        self.conv4 = Conv1d(in_channels=10, out_channels=10, kernel_size=11, padding=5)
+        self.conv5 = Conv1d(in_channels=10, out_channels=CLASS_NUMBER, kernel_size=11, padding=5)
     def forward(self, x):
         # conv functions need as input: (batchsize, channels, sequence)
         x = self.conv1(x)
         x = F.relu(x)
         x = self.conv2(x)
+        x = F.relu(x)
+        x = self.conv3(x)
+        x = F.relu(x)
+        x = self.conv4(x)
+        x = F.relu(x)
+        x = self.conv5(x)
         x = F.relu(x)
         return x
 
