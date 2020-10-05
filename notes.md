@@ -1,5 +1,6 @@
 # conda environment
 
+```
 conda create -n pyProj
 source activate pyProj
 conda install -c pytorch pytorch
@@ -7,7 +8,7 @@ conda install -c pytorch torchvision
 conda install numpy 
 conda install matplotlib
 conda install -c conda-forge ipdb
-
+```
 
 # Tutorials
 
@@ -26,15 +27,18 @@ How to evaluate the model?
 - only accuracy does not make sense because classes are biased
 - what does 70 or 80% accuracy in Wang et al. 2016 actually mean?
 - what is the 'simple'/random model to compare to? 
+- implement SegmentofOVerlap SOV evaluation metric
 
 Which loss function and regularization?
-- what loss function do Wang et al. use and how to implement it in pytorch (optimizer)
-- does the loss function account for the class bias?
-- how to implement regularization in pytorch? 
+- what loss function do Wang et al. use and how to implement it in pytorch (criterion)
+- do they have a weighted loss function?
+- what optimizer, Adam or SGD?
+- how to implement L2 regularization in pytorch? (Wang et al. use regularization factor 50)
 
 How to handle the class bias?
 - over sampling of rare classes does not make sense?
-- tailor loss function to penalize rare classes more?
+- tailor loss function to penalize rare classes more?  
+  -> weight parameter in CrossEntropyLoss()
 
 Architecture
 - what is the CNN architecture of Wang et al.? 
