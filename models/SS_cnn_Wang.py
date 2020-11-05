@@ -27,18 +27,18 @@ except:
 # Reshape data (see explore_data.py)
 data_reshaped = data.reshape(5926, 700, -1)
 
-X_train = data_reshaped[0:5430, :, np.r_[0:21, 31:33, 35:57]]
-y_train = data_reshaped[0:5430, :, 22:30]
-X_test = data_reshaped[5435:5690, :, np.r_[0:21, 31:33, 35:57]]
-y_test = data_reshaped[5435:5690, :, 22:30]
-X_val = data_reshaped[5690:5926, :, np.r_[0:21, 31:33, 35:57]]
-y_val = data_reshaped[5690:5926, :, 22:30]
+X_train = data_reshaped[0:5430, :, np.r_[0:22, 31:33, 35:57]]
+y_train = data_reshaped[0:5430, :, 22:31]
+X_test = data_reshaped[5435:5690, :, np.r_[0:22, 31:33, 35:57]]
+y_test = data_reshaped[5435:5690, :, 22:31]
+X_val = data_reshaped[5690:5926, :, np.r_[0:22, 31:33, 35:57]]
+y_val = data_reshaped[5690:5926, :, 22:31]
 
 print(X_train.shape)
-# (5430, 700, 45)       # proteins, aa, features
+# (5430, 700, 46)       # proteins, aa, features
 
 print(y_train.shape)
-# (5430, 700, 8)
+# (5430, 700, 9)
 
 X_train = torch.from_numpy(X_train).float()
 y_train = torch.from_numpy(y_train)
@@ -62,12 +62,12 @@ class CnnModel(Module):
         # out_channel == number of filters to learn
         # kernel_size == window/filter size
         # padding = kernel_size / 2 - 1 to conserve sequence length
-        self.conv1 = Conv1d(in_channels=45, out_channels=16, kernel_size=11, padding=5)
-        # 8 output categories
-        self.conv2 = Conv1d(in_channels=16, out_channels=10, kernel_size=11, padding=5)
+        self.conv1 = Conv1d(in_channels=46, out_channels=10, kernel_size=11, padding=5)
+        self.conv2 = Conv1d(in_channels=10, out_channels=10, kernel_size=11, padding=5)
         self.conv3 = Conv1d(in_channels=10, out_channels=10, kernel_size=11, padding=5)
         self.conv4 = Conv1d(in_channels=10, out_channels=10, kernel_size=11, padding=5)
-        self.conv5 = Conv1d(in_channels=10, out_channels=8, kernel_size=11, padding=5)
+        # 9 output categories, including NoSeq class
+        self.conv5 = Conv1d(in_channels=10, out_channels=9, kernel_size=11, padding=5)
     def forward(self, x):
         # conv functions need as input: (batchsize, channels, sequence)
         x = self.conv1(x)
@@ -89,7 +89,7 @@ model = CnnModel()
 print(model)
 
 # Hyperparameters
-num_epochs = 15
+num_epochs = 20
 learning_rate = 0.001
 
 # defining optimizer
@@ -104,15 +104,23 @@ labels_train = np.argmax(y_train.numpy(), axis=2)       # convert to numpy array
 label_distribution = Counter(labels_train.reshape(-1))
 
 # convert counter object to ordered list
-label_distribution = [label_distribution[i] for i in range(len(label_distribution))]
+# ignore NoSeq class, will be set to 0
+label_distribution = [label_distribution[i] for i in range(len(label_distribution) - 1)]
 
 largest_class = max(label_distribution)
 
 loss_weights = np.fromiter((largest_class / label_distribution[i] for i in range(len(label_distribution))), dtype=float)
 
+loss_weights = np.append(loss_weights, [0])
 loss_weights = torch.from_numpy(loss_weights).float()
 
-criterion = CrossEntropyLoss(weight=loss_weights)
+# print(loss_weights)
+# tensor([1.7891e+00, 3.3287e+01, 1.5919e+00, 8.8303e+00, 1.8139e+03, 1.0000e+00, 4.1688e+00, 3.0442e+00, 0.0000e+00])
+
+# loss_weights = torch.tensor([1, 1, 1, 1, 1, 1, 1, 1, 0]).float()
+# criterion = CrossEntropyLoss(weight=loss_weights)
+criterion = CrossEntropyLoss(ignore_index=8, weight=loss_weights)
+# criterion = CrossEntropyLoss()
 
 
 # Train
@@ -154,23 +162,23 @@ for e in range(num_epochs):
 # Evaluation
 #########################################################################################
 
-############### on training set
+# ############### on training set
 
-# pass train set through the model
-with torch.no_grad():
-    output = model(torch.transpose(X_train, 1, 2))
+# # pass train set through the model
+# with torch.no_grad():
+#     output = model(torch.transpose(X_train, 1, 2))
 
-# get predictions
-softmax = torch.exp(output)
-prob = list(softmax.numpy())
-predictions = np.argmax(prob, axis=1)
+# # get predictions
+# softmax = torch.exp(output)
+# prob = list(softmax.numpy())
+# predictions = np.argmax(prob, axis=1)
 
-# get labels
-labels_train = np.argmax(y_train, axis=2)
+# # get labels
+# labels_train = np.argmax(y_train, axis=2)
 
-# get overall accuracy
-acc_train = accuracy_score(labels_train.reshape(-1), predictions.reshape(-1))
-print('accuracy train', acc_train)
+# # get overall accuracy
+# acc_train = accuracy_score(labels_train.reshape(-1), predictions.reshape(-1))
+# print('accuracy train', acc_train)
 
 
 ############### on validation set
@@ -188,14 +196,19 @@ pred_val_unrolled = predictions_val.reshape(-1)
 # get labels
 labels_val = np.argmax(y_val, axis=2)
 labels_val_unrolled = labels_val.reshape(-1)
+labels_val_masked = labels_val_unrolled[labels_val_unrolled != 8]
+
+pred_val_masked = pred_val_unrolled[labels_val_unrolled != 8]
 
 # get overall accuracy
-acc_val = accuracy_score(labels_val_unrolled, pred_val_unrolled)
+# acc_val = accuracy_score(labels_val_unrolled, pred_val_unrolled)
+acc_val = accuracy_score(labels_val_masked, pred_val_masked)
 print('accuracy val', acc_val)
 
 # get confusion matrix for all classes (tp, tn, fp, fn)
-print(confusion_matrix(labels_val_unrolled, pred_val_unrolled))
+# print(confusion_matrix(labels_val_unrolled, pred_val_unrolled))
+print(confusion_matrix(labels_val_masked, pred_val_masked))
 
 # see precision, recall, f1 score and support for all classes
 target_names = ['class 0', 'class 1', 'class 2', 'class 3', 'class 4', 'class 5', 'class 6', 'class 7']
-print(classification_report(labels_val_unrolled, pred_val_unrolled, target_names=target_names))
+print(classification_report(labels_val_masked, pred_val_masked, target_names=target_names))
